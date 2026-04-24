@@ -1,0 +1,21 @@
+[Unit]
+Description=Switch Acc Codex host web app
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/quang/DATA/DACN/switch-acc-codex
+Environment=HOME=/home/quang
+Environment=HOST=127.0.0.1
+Environment=PORT=3188
+Environment=NODE_ENV=production
+Environment=CODEX_HOME=/home/quang/.codex
+Environment=CODEX_BIN=/home/quang/.nvm/versions/node/v22.22.2/bin/codex
+Environment=PATH=/home/quang/.nvm/versions/node/v22.22.2/bin:/home/quang/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/quang/.nvm/versions/node/v22.22.2/bin/node /home/quang/DATA/DACN/switch-acc-codex/server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

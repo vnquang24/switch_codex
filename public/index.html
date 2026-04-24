@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Switch Acc Codex</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">Local control panel</p>
+        <h1>Switch Codex account in one click.</h1>
+        <p class="lede">
+          Reads the active credential from <code>auth.json</code>, saves named profiles,
+          and switches the live Codex home back to any saved account.
+        </p>
+      </section>
+
+      <nav class="tabs" aria-label="Views">
+        <button class="tab-button tab-button-active" data-tab="dashboard" type="button">Codex Dashboard</button>
+        <button class="tab-button" data-tab="vault" type="button">GPT Accounts</button>
+      </nav>
+
+      <section id="viewDashboard" class="view-section">
+        <section class="grid">
+          <article class="panel panel-accent">
+            <div class="panel-head">
+              <h2>Active account</h2>
+              <button id="refreshButton" class="ghost-button" type="button">Refresh</button>
+            </div>
+          <p class="subtle panel-note">
+            JWT/subscription are derived from local auth, while usage limits prefer the Codex OAuth API.
+          </p>
+            <div id="statusCard" class="card-stack"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Save current account</h2>
+            </div>
+            <form id="importForm" class="import-form">
+              <label for="profileName">Profile name</label>
+              <input id="profileName" name="profileName" placeholder="ex: team-01 / pro-02">
+              <label class="toggle-row">
+                <input id="saveToVault" name="saveToVault" type="checkbox">
+                <span>Also save this login to GPT Accounts</span>
+              </label>
+              <div id="importMirrorPreview" class="inline-note subtle">
+                Active account email will appear here after refresh.
+              </div>
+              <label for="importPassword">Password for GPT account</label>
+              <input id="importPassword" name="password" type="password" placeholder="Optional unless saving to GPT Accounts">
+              <label for="importNote">Quick note</label>
+              <textarea id="importNote" name="note" rows="3" placeholder="Optional note for the GPT Accounts tab"></textarea>
+              <button type="submit">Import current auth</button>
+            </form>
+            <p class="hint">
+              This stores a full copy of the current <code>auth.json</code> in the local
+              <code>storage/</code> folder, and can also mirror the email/password to <code>GPT Accounts</code>.
+            </p>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Login via Web</h2>
+            </div>
+            <form id="deviceAuthForm" class="import-form">
+              <label for="deviceAuthProfileName">Profile name after login</label>
+              <input id="deviceAuthProfileName" name="profileName" placeholder="ex: plus-03 / team-07">
+              <div class="inline-actions">
+                <button id="deviceAuthStartButton" type="submit">Start device login</button>
+                <button id="deviceAuthCancelButton" class="ghost-button" type="button">Cancel</button>
+              </div>
+            </form>
+            <div id="deviceAuthCard" class="device-auth-card empty-state">
+              <strong>No device-auth flow running</strong>
+              <p>Start from here to open the official Codex login page, then the app will save the resulting auth into a new profile automatically.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="grid">
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Manual+ Rotation</h2>
+            </div>
+            <form id="rotationForm" class="rotation-form">
+              <label class="toggle-row">
+                <input id="rotationEnabled" name="rotationEnabled" type="checkbox">
+                <span>Enable switch suggestions</span>
+              </label>
+              <label>
+                Session warning threshold
+                <input id="sessionThreshold" name="sessionThreshold" type="number" min="1" max="99" step="1">
+              </label>
+              <label>
+                Weekly protection threshold
+                <input id="weeklyThreshold" name="weeklyThreshold" type="number" min="1" max="99" step="1">
+              </label>
+              <label>
+                Remind again after
+                <input id="cooldownMinutes" name="cooldownMinutes" type="number" min="5" max="720" step="5">
+              </label>
+              <label class="toggle-row">
+                <input id="desktopNotifications" name="desktopNotifications" type="checkbox">
+                <span>Enable Linux desktop notifications from the backend</span>
+              </label>
+            </form>
+            <div class="notification-row">
+              <div>
+                <p class="notification-title">Desktop notifications</p>
+                <p id="notificationStatus" class="subtle notification-status">Browser permission not requested yet.</p>
+              </div>
+              <button id="notificationButton" class="ghost-button" type="button">Enable desktop notifications</button>
+            </div>
+            <p class="hint">
+              When the active account falls below your threshold, the app suggests the best saved account and asks before switching.
+            </p>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Suggested Next Account</h2>
+            </div>
+            <div id="rotationSuggestion" class="rotation-suggestion empty-state">
+              <strong>No suggestion right now</strong>
+              <p>The app will watch session and weekly usage, then propose the next account automatically.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Rotation Monitor</h2>
+            <p class="subtle">Backend worker state and last notification outcome.</p>
+          </div>
+          <div id="rotationMonitorCard" class="card-stack"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Saved profiles</h2>
+            <p class="subtle">
+              Switching overwrites the active <code>auth.json</code> inside the active Codex home.
+            </p>
+          </div>
+          <p class="subtle panel-note">
+            Saved profiles try to load live usage from their stored OAuth tokens and fall back to the last known snapshot.
+          </p>
+          <div id="profilesList" class="profiles"></div>
+        </section>
+
+        <section class="panel notice">
+          <h2>Operational notes</h2>
+          <ul>
+            <li>New Codex CLI sessions should pick up the new account immediately.</li>
+            <li>Existing Codex sessions or the VS Code extension may need restart after a switch.</li>
+            <li>All saved profiles contain real refresh tokens. Keep this project on a trusted machine only.</li>
+          </ul>
+        </section>
+      </section>
+
+      <section id="viewVault" class="view-section view-section-hidden">
+        <section class="grid">
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Save GPT Account</h2>
+              <span id="gptAccountMode" class="badge badge-muted">Create</span>
+            </div>
+            <form id="gptAccountForm" class="import-form">
+              <input id="gptAccountId" name="id" type="hidden">
+              <label for="gptAccountName">Account name</label>
+              <input id="gptAccountName" name="name" placeholder="ex: GPT Team 01 / Personal Plus">
+              <label for="gptAccountEmail">Email / username</label>
+              <input id="gptAccountEmail" name="email" placeholder="name@example.com">
+              <label for="gptAccountPassword">Password</label>
+              <input id="gptAccountPassword" name="password" type="password" placeholder="Stored locally only">
+              <label for="gptAccountNote">Notes</label>
+              <textarea id="gptAccountNote" name="note" rows="4" placeholder="Optional note: phone, recovery mail, plan, purpose"></textarea>
+              <div class="inline-actions">
+                <button type="submit">Save GPT account</button>
+                <button id="gptAccountReset" class="ghost-button" type="button">Clear form</button>
+              </div>
+            </form>
+            <p class="hint">
+              This tab stores GPT login credentials only on this local machine in <code>storage/gpt-accounts.json</code>.
+            </p>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Credential Notes</h2>
+            </div>
+            <div class="vault-summary">
+              <p class="subtle">Passwords are kept as plain text because this tool is intentionally local-first and you asked for speed over hardened security.</p>
+              <p class="subtle">Use this tab for GPT web accounts, recovery context, or internal labels that do not exist in Codex profile metadata.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Stored GPT Accounts</h2>
+            <p class="subtle">Edit, reveal, copy, or delete local credentials.</p>
+          </div>
+          <div id="gptAccountsList" class="profiles"></div>
+        </section>
+      </section>
+
+      <div id="toast" class="toast" hidden></div>
+    </main>
+
+    <dialog id="rotationDialog" class="rotation-dialog">
+      <form method="dialog" class="rotation-dialog-card">
+        <div class="panel-head">
+          <h2>Switch Suggestion</h2>
+          <button id="rotationCloseButton" class="ghost-button" type="button">Close</button>
+        </div>
+        <div id="rotationDialogBody" class="rotation-dialog-body"></div>
+        <div class="rotation-dialog-actions">
+          <button id="rotationLaterButton" class="ghost-button" type="button">Remind later</button>
+          <button id="rotationConfirmButton" type="button">Switch now</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

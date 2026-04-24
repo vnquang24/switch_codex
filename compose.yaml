@@ -1,0 +1,25 @@
+services:
+  switch-acc-codex:
+    build:
+      context: .
+    container_name: switch-acc-codex
+    user: "1000:1000"
+    restart: unless-stopped
+    security_opt:
+      - apparmor:unconfined
+    ports:
+      - "127.0.0.1:3188:3188"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3188
+      CODEX_HOME: /codex-home
+      DISPLAY: ${DISPLAY}
+      XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR}
+      DBUS_SESSION_BUS_ADDRESS: ${DBUS_SESSION_BUS_ADDRESS}
+    volumes:
+      - "${HOME}/.codex:/codex-home"
+      - "switch-acc-codex-storage:/app/storage"
+      - "${XDG_RUNTIME_DIR}/bus:${XDG_RUNTIME_DIR}/bus"
+
+volumes:
+  switch-acc-codex-storage:
